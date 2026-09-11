@@ -175,7 +175,10 @@ function viewWallet(){
   const inWindow = isWithinWithdrawWindow();
   const canWithdraw = state.wallet >= REMOTE_CONFIG.withdrawMin;
   return `
-    <div class="topbar"><div class="brand"><div class="brand-name">Wallet</div></div></div>
+    <div class="topbar">
+      <div class="brand"><div class="brand-name">Wallet</div></div>
+      <button class="logout-link" data-action="logout">Log out</button>
+    </div>
 
     <div class="balance-card">
       <div class="balance-label">Ads Wallet</div>
@@ -222,6 +225,52 @@ function viewWallet(){
           <span class="pill ${w.status === "success" ? "pill-success" : (w.status === "failed" ? "pill-fail" : "pill-pending")}">${w.status}</span>
         </div>
       `).join("")}
+    </div>
+  `;
+}
+
+function viewAuthPhone(prefillPhone){
+  return `
+    <div class="auth-wrap">
+      <div class="brand-mark" style="width:52px; height:52px; font-size:24px; margin-bottom:18px;">E</div>
+      <div class="auth-title">Welcome to Earnly</div>
+      <div class="auth-sub">Enter your mobile number to continue</div>
+
+      <div class="field" style="margin-top:22px; width:100%;">
+        <label>Mobile number</label>
+        <div class="phone-input">
+          <span class="phone-prefix">+91</span>
+          <input type="tel" id="auth-phone" placeholder="98765 43210" maxlength="10" inputmode="numeric" value="${prefillPhone || ""}">
+        </div>
+      </div>
+
+      <button class="btn btn-primary" data-action="send-otp" style="margin-top:6px;">Send OTP</button>
+
+      <div class="notice" style="margin-top:20px; text-align:left;">
+        By continuing, you agree that your account and wallet are linked to this mobile number.
+      </div>
+    </div>
+  `;
+}
+
+function viewAuthOtp(phone){
+  return `
+    <div class="auth-wrap">
+      <div class="brand-mark" style="width:52px; height:52px; font-size:24px; margin-bottom:18px;">E</div>
+      <div class="auth-title">Verify your number</div>
+      <div class="auth-sub">Code sent to +91 ${phone}</div>
+
+      <div class="field" style="margin-top:22px; width:100%;">
+        <label>Enter OTP</label>
+        <input type="tel" id="auth-otp" placeholder="6-digit code" maxlength="6" inputmode="numeric" style="width:100%; padding:13px 14px; border-radius:10px; background:var(--bg-1); border:1px solid var(--line); color:var(--text-0); font-size:18px; letter-spacing:4px; text-align:center; font-family:var(--font-num);">
+      </div>
+
+      <button class="btn btn-primary" data-action="verify-otp" style="margin-top:6px;">Verify & Continue</button>
+      <button class="btn btn-ghost" data-action="change-number" style="margin-top:10px;">Change number</button>
+
+      <div class="notice" style="margin-top:20px; text-align:left;">
+        Demo mode: use code <b>${REMOTE_CONFIG.demoOtp}</b> to continue. Real SMS delivery is not connected yet.
+      </div>
     </div>
   `;
 }
