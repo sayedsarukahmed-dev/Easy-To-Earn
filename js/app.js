@@ -1,11 +1,25 @@
 const routes = { home: viewHome, earn: viewEarn, refer: viewRefer, wallet: viewWallet };
 let currentRoute = "home";
+let authStep = "phone";
+let pendingPhone = "";
 
 function render(){
   document.getElementById("app").innerHTML = routes[currentRoute]();
   document.querySelectorAll(".navbtn").forEach(b => {
     b.classList.toggle("active", b.dataset.route === currentRoute);
   });
+}
+
+function renderRoot(){
+  const nav = document.getElementById("bottomnav");
+  if(!state.auth.verified){
+    nav.style.display = "none";
+    document.getElementById("app").innerHTML =
+      authStep === "otp" ? viewAuthOtp(pendingPhone) : viewAuthPhone(pendingPhone);
+  }else{
+    nav.style.display = "flex";
+    render();
+  }
 }
 
 function goTo(route){
@@ -32,6 +46,46 @@ document.getElementById("app").addEventListener("click", (e) => {
   const btn = e.target.closest("[data-action]");
   if(!btn) return;
   const action = btn.dataset.action;
+
+  if(action === "send-otp"){
+    const phoneInput = document.getElementById("auth-phone");
+    const phone = phoneInput.value.trim();
+    if(!/^\d{10}$/.test(phone)){
+      toast("Enter a valid 10-digit mobile number", "warn");
+      return;
+    }
+    sendOtp(phone);
+    pendingPhone = phone;
+    authStep = "otp";
+    renderRoot();
+    toast("OTP sent", "success");
+    return;
+  }
+
+  if(action === "verify-otp"){
+    const code = document.getElementById("auth-otp").value.trim();
+    if(verifyOtp(pendingPhone, code)){
+      toast("Number verified", "success");
+      renderRoot();
+    }else{
+      toast("Incorrect OTP", "warn");
+    }
+    return;
+  }
+
+  if(action === "change-number"){
+    authStep = "phone";
+    renderRoot();
+    return;
+  }
+
+  if(action === "logout"){
+    logout();
+    authStep = "phone";
+    pendingPhone = "";
+    renderRoot();
+    return;
+  }
 
   if(action === "watch-ad"){
     openAdPlayer(({ completed }) => {
@@ -82,4 +136,4 @@ document.getElementById("app").addEventListener("click", (e) => {
   }
 });
 
-render();
+renderRoot();
