@@ -9,6 +9,7 @@ const REMOTE_CONFIG = {
   referralBonusReferrer: 1.00,
   referralBonusNewUser: 0.50,
   withdrawMin: 100,
+  demoOtp: "123456",
   vipLevels: [
     { level: 1, ads: 2000,  reward: 5   },
     { level: 2, ads: 4000,  reward: 10  },
@@ -25,6 +26,7 @@ const STORE_KEY = "earnly_state_v1";
 
 function defaultState(){
   return {
+    auth: { phone: null, verified: false },
     wallet: 0,
     bonusWallet: 0,
     adsTotal: 0,
@@ -56,6 +58,7 @@ function load(){
     const raw = localStorage.getItem(STORE_KEY);
     if(!raw) return defaultState();
     const parsed = JSON.parse(raw);
+    if(!parsed.auth) parsed.auth = { phone: null, verified: false };
     if(parsed.lastAdsDayKey !== todayKey()){
       parsed.adsToday = 0;
       parsed.lastAdsDayKey = todayKey();
@@ -68,6 +71,25 @@ function load(){
 
 function save(){
   localStorage.setItem(STORE_KEY, JSON.stringify(state));
+}
+
+function sendOtp(phone){
+  console.log("[DEMO] OTP for " + phone + " is " + REMOTE_CONFIG.demoOtp);
+  return true;
+}
+
+function verifyOtp(phone, code){
+  if(code === REMOTE_CONFIG.demoOtp){
+    state.auth = { phone, verified: true };
+    save();
+    return true;
+  }
+  return false;
+}
+
+function logout(){
+  state.auth = { phone: null, verified: false };
+  save();
 }
 
 function currentVipLevel(){
