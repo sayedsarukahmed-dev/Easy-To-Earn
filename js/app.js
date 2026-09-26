@@ -1,7 +1,8 @@
-const routes = { home: viewHome, earn: viewEarn, refer: viewRefer, wallet: viewWallet };
+const routes = { home: viewHome, earn: viewEarn, tasks: viewTasks, refer: viewRefer, wallet: viewWallet };
 let currentRoute = "home";
 let authStep = "phone";
 let pendingPhone = "";
+let activeWalletTab = "ads";
 
 function isAdminHash(){ return window.location.hash === "#admin"; }
 
@@ -174,6 +175,8 @@ document.body.addEventListener("click", (e) => {
     return;
   }
 
+  if(action === "switch-wallet-tab"){ activeWalletTab = btn.dataset.wallet; render(); return; }
+
   // ---- Ads ----
   if(action === "watch-ad"){
     openAdPlayer(({ completed }) => {
@@ -273,4 +276,3 @@ document.body.addEventListener("click", (e) => {
 });
 
 renderRoot();
-
