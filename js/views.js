@@ -138,11 +138,22 @@ function lockGateHtml(watched, needed, title, subtitle, previewOffers){
   `;
 }
 
+function offerListOrEmpty(offers, categoryLabel){
+  if(offers.length > 0){
+    return `<div class="card-list">${offers.map(o => offerCard(o, true)).join("")}</div>`;
+  }
+  return `
+    <div class="empty-attract">
+      <div class="empty-attract-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+      <div class="empty-attract-title">No ${categoryLabel} tasks right now<div class="hi">अभी कोई कार्य उपलब्ध नहीं है</div></div>
+      <div class="empty-attract-sub">New tasks are added regularly through the day — the next one could unlock any time. Check back soon.<div class="hi">नए कार्य दिन भर में लगातार जोड़े जाते हैं — कभी भी जांच लें।</div></div>
+    </div>
+  `;
+}
+
 function viewEarn(){
   const task100Done = state.adsToday >= 100;
   const task500Done = state.adsToday >= 500;
-  const mainOffers = REMOTE_CONFIG.cpaOffers.filter(o => o.category !== "aitools");
-  const aiOffers = REMOTE_CONFIG.cpaOffers.filter(o => o.category === "aitools");
 
   return `
     <div class="topbar">
@@ -191,18 +202,6 @@ function viewEarn(){
       </div>
     </div>
 
-    <div class="section-title">CPA Tasks — Premium Wallet<div class="hi">सीपीए कार्य — प्रीमियम वॉलेट</div></div>
-    ${isMainCpaUnlockedToday()
-      ? `<div class="card-list">${mainOffers.map(o => offerCard(o, true)).join("") || `<div class="empty-state"><p>No offers available right now.</p></div>`}</div>`
-      : lockGateHtml(state.adsToday, REMOTE_CONFIG.dailyMinAdsGate, "Watch more ads today to unlock CPA Tasks", "सीपीए कार्य अनलॉक करने के लिए आज और विज्ञापन देखें", mainOffers)
-    }
-
-    <div class="section-title">AI Tools & Extras<div class="hi">एआई टूल्स और अतिरिक्त</div></div>
-    ${isAiToolsUnlockedToday()
-      ? `<div class="card-list">${aiOffers.map(o => offerCard(o, true)).join("") || `<div class="empty-state"><p>No offers available right now.</p></div>`}</div>`
-      : lockGateHtml(state.adsToday, REMOTE_CONFIG.aiToolsGateAds, "Watch a few ads to unlock AI Tools & Extras", "एआई टूल्स अनलॉक करने के लिए कुछ विज्ञापन देखें", aiOffers)
-    }
-
     <div class="section-title">VIP Levels<div class="hi">वीआईपी स्तर</div></div>
     <div class="card-list">
       ${REMOTE_CONFIG.vipLevels.map(v => {
@@ -224,6 +223,29 @@ function viewEarn(){
       Each VIP reward is credited only once per level. Skipping any ad — including inside the 3-ad set — before it finishes means it is not counted and gives no reward.
       <div class="hi">हर वीआईपी रिवॉर्ड हर स्तर पर केवल एक बार मिलता है। किसी भी विज्ञापन को पूरा होने से पहले स्किप करने पर वह गिना नहीं जाएगा और कोई रिवॉर्ड नहीं मिलेगा।</div>
     </div>
+  `;
+}
+
+function viewTasks(){
+  const mainOffers = REMOTE_CONFIG.cpaOffers.filter(o => o.category !== "aitools");
+  const aiOffers = REMOTE_CONFIG.cpaOffers.filter(o => o.category === "aitools");
+
+  return `
+    <div class="topbar">
+      <div class="brand"><div class="brand-name">Tasks<div class="hi">कार्य</div></div></div>
+    </div>
+
+    <div class="section-title">CPA Tasks — Premium Wallet<div class="hi">सीपीए कार्य — प्रीमियम वॉलेट</div></div>
+    ${isMainCpaUnlockedToday()
+      ? offerListOrEmpty(mainOffers, "CPA")
+      : lockGateHtml(state.adsToday, REMOTE_CONFIG.dailyMinAdsGate, "Watch more ads today to unlock CPA Tasks", "सीपीए कार्य अनलॉक करने के लिए आज और विज्ञापन देखें", mainOffers)
+    }
+
+    <div class="section-title">AI Tools & Extras<div class="hi">एआई टूल्स और अतिरिक्त</div></div>
+    ${isAiToolsUnlockedToday()
+      ? offerListOrEmpty(aiOffers, "AI Tools")
+      : lockGateHtml(state.adsToday, REMOTE_CONFIG.aiToolsGateAds, "Watch a few ads to unlock AI Tools & Extras", "एआई टूल्स अनलॉक करने के लिए कुछ विज्ञापन देखें", aiOffers)
+    }
   `;
 }
 
@@ -304,6 +326,10 @@ function viewWallet(){
       <div class="brand"><div class="brand-name">Wallet<div class="hi">वॉलेट</div></div></div>
       <button class="logout-link" data-action="logout">Log out</button>
     </div>
+    <div class="seg-toggle">
+      <button class="seg-btn ${activeWalletTab === "ads" ? "active" : ""}" data-action="switch-wallet-tab" data-wallet="ads">Ads Wallet</button>
+      <button class="seg-btn ${activeWalletTab === "cpa" ? "active gold" : ""}" data-action="switch-wallet-tab" data-wallet="cpa">CPA Wallet</button>
+    </div>
     <div class="notice ${inWindow ? "" : "warn"}" style="margin-bottom:18px;">
       <b>Withdrawal terms:</b>
       <ul>
@@ -314,8 +340,9 @@ function viewWallet(){
       </ul>
       <div class="hi">न्यूनतम निकासी ₹${REMOTE_CONFIG.withdrawMin}। केवल "उपलब्ध" राशि ही निकाली जा सकती है। असली ट्रांसफर पूरा होने के बाद ही "Success" दिखेगा।</div>
     </div>
-    ${walletBlock("ads", ads, "Ads Wallet", "एड्स वॉलेट", false)}
-    ${walletBlock("cpa", cpa, "CPA Premium Wallet", "सीपीए प्रीमियम वॉलेट", true)}
+    ${activeWalletTab === "ads"
+      ? walletBlock("ads", ads, "Ads Wallet", "एड्स वॉलेट", false)
+      : walletBlock("cpa", cpa, "CPA Premium Wallet", "सीपीए प्रीमियम वॉलेट", true)}
     <button class="btn btn-ghost" data-action="open-history">View Transaction History</button>
   `;
 }
@@ -544,4 +571,3 @@ function viewAdminOfferForm(offerId){
     <button class="btn btn-primary" data-action="admin-save-offer" data-offer="${o ? o.id : ""}">Save Offer</button>
   `;
 }
-
