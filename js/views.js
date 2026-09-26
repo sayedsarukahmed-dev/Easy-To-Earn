@@ -33,10 +33,10 @@ function tickCountdowns(){
 setInterval(tickCountdowns, 1000);
 
 const CATEGORY_LABEL = {
-  easy: "Easy Install",
-  medium: "Medium Task",
-  extended: "Extended Task",
-  hardest: "Premium Task",
+  easy: "Easy Earn",
+  medium: "Medium Earn",
+  extended: "Extended Earn",
+  hardest: "Premium Earn",
   aitools: "AI Tools & Extras",
 };
 
@@ -120,12 +120,16 @@ function viewHome(){
 function lockGateHtml(watched, needed, title, subtitle, previewOffers){
   return `
     <div class="lock-hero">
+      <div class="money-fx">
+        <span class="coin c1">₹</span><span class="coin c2">₹</span><span class="coin c3">₹</span>
+        <span class="coin c4">₹</span><span class="coin c5">₹</span>
+      </div>
       <div class="lock-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
       <div class="lock-big-number">${watched}<span>/${needed} ads</span></div>
       <div class="lock-sub">${title}<div class="hi">${subtitle}</div></div>
       <div class="lock-progress-track"><div class="lock-progress-fill" style="width:${Math.min(100,(watched/needed)*100)}%"></div></div>
       <div class="lock-remaining">${Math.round(Math.min(100,(watched/needed)*100))}% complete</div>
-      <button class="btn btn-primary" data-action="watch-ad" style="margin-top:16px;">Watch an Ad</button>
+      <button class="btn btn-primary" data-action="watch-gate-ad" style="margin-top:16px;">Watch an Ad</button>
     </div>
     ${previewOffers.length ? `
       <div class="locked-preview-wrap">
@@ -232,20 +236,24 @@ function viewTasks(){
 
   return `
     <div class="topbar">
-      <div class="brand"><div class="brand-name">Tasks<div class="hi">कार्य</div></div></div>
+      <div class="brand"><div class="brand-name"><span class="cpa-brand">CPA</span> Earn<div class="hi">सीपीए अर्न</div></div></div>
     </div>
 
-    <div class="section-title">CPA Tasks — Premium Wallet<div class="hi">सीपीए कार्य — प्रीमियम वॉलेट</div></div>
+    <div class="section-title"><span class="cpa-brand">CPA</span> Earn — Premium Wallet<div class="hi">सीपीए अर्न — प्रीमियम वॉलेट</div></div>
     ${isMainCpaUnlockedToday()
       ? offerListOrEmpty(mainOffers, "CPA")
-      : lockGateHtml(state.adsToday, REMOTE_CONFIG.dailyMinAdsGate, "Watch more ads today to unlock CPA Tasks", "सीपीए कार्य अनलॉक करने के लिए आज और विज्ञापन देखें", mainOffers)
+      : lockGateHtml(state.gateAdsToday, REMOTE_CONFIG.dailyMinAdsGate, "Watch a few ads to unlock CPA Earn", "सीपीए अर्न अनलॉक करने के लिए कुछ विज्ञापन देखें", mainOffers)
     }
 
     <div class="section-title">AI Tools & Extras<div class="hi">एआई टूल्स और अतिरिक्त</div></div>
     ${isAiToolsUnlockedToday()
       ? offerListOrEmpty(aiOffers, "AI Tools")
-      : lockGateHtml(state.adsToday, REMOTE_CONFIG.aiToolsGateAds, "Watch a few ads to unlock AI Tools & Extras", "एआई टूल्स अनलॉक करने के लिए कुछ विज्ञापन देखें", aiOffers)
+      : lockGateHtml(state.gateAdsToday, REMOTE_CONFIG.aiToolsGateAds, "Watch a few ads to unlock AI Tools & Extras", "एआई टूल्स अनलॉक करने के लिए कुछ विज्ञापन देखें", aiOffers)
     }
+    <div class="notice" style="margin-top:14px;">
+      Ads watched here to unlock <span class="cpa-brand">CPA</span> Earn are separate from your Ads Wallet — they don't add any reward on their own, they only unlock access to <span class="cpa-brand">CPA</span> Earn and AI Tools tasks.
+      <div class="hi">यहां देखे गए विज्ञापनों से कोई इनाम नहीं मिलता — ये सिर्फ सीपीए अर्न और एआई टूल्स को अनलॉक करते हैं।</div>
+    </div>
   `;
 }
 
@@ -328,7 +336,7 @@ function viewWallet(){
     </div>
     <div class="seg-toggle">
       <button class="seg-btn ${activeWalletTab === "ads" ? "active" : ""}" data-action="switch-wallet-tab" data-wallet="ads">Ads Wallet</button>
-      <button class="seg-btn ${activeWalletTab === "cpa" ? "active gold" : ""}" data-action="switch-wallet-tab" data-wallet="cpa">CPA Wallet</button>
+      <button class="seg-btn ${activeWalletTab === "cpa" ? "active gold" : ""}" data-action="switch-wallet-tab" data-wallet="cpa"><span class="cpa-brand ${activeWalletTab === "cpa" ? "on-gold" : ""}">CPA</span> Wallet</button>
     </div>
     <div class="notice ${inWindow ? "" : "warn"}" style="margin-bottom:18px;">
       <b>Withdrawal terms:</b>
@@ -571,3 +579,4 @@ function viewAdminOfferForm(offerId){
     <button class="btn btn-primary" data-action="admin-save-offer" data-offer="${o ? o.id : ""}">Save Offer</button>
   `;
 }
+
