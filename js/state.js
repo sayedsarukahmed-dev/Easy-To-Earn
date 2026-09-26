@@ -14,6 +14,7 @@ function defaultState(){
     auth: { phone: null, verified: false },
     adsTotal: 0,
     adsToday: 0,
+    gateAdsToday: 0,
     lastAdsDayKey: todayKey(),
     dailyBonusClaimedDayKey: null,
     vipClaimed: [],
@@ -45,8 +46,10 @@ function load(){
     const parsed = JSON.parse(raw);
     const d = defaultState();
     for(const k in d){ if(!(k in parsed)) parsed[k] = d[k]; }
+    if(parsed.gateAdsToday === undefined) parsed.gateAdsToday = 0;
     if(parsed.lastAdsDayKey !== todayKey()){
       parsed.adsToday = 0;
+      parsed.gateAdsToday = 0;
       parsed.lastAdsDayKey = todayKey();
     }
     return parsed;
@@ -150,12 +153,19 @@ function claimDailyBonus(){
   return true;
 }
 
+// Gate ads are a completely separate, zero-reward counter — pure profit,
+// never touches the wallet ledger, adsTotal, VIP progress, or daily-task counters.
+function creditGateAdWatch(){
+  state.gateAdsToday += 1;
+  save();
+}
+
 // ---- Gates ----
 function isMainCpaUnlockedToday(){
-  return state.adsToday >= REMOTE_CONFIG.dailyMinAdsGate;
+  return state.gateAdsToday >= REMOTE_CONFIG.dailyMinAdsGate;
 }
 function isAiToolsUnlockedToday(){
-  return state.adsToday >= REMOTE_CONFIG.aiToolsGateAds;
+  return state.gateAdsToday >= REMOTE_CONFIG.aiToolsGateAds;
 }
 
 // ---- CPA offers / submissions ----
@@ -224,5 +234,3 @@ function requestWithdrawal(wallet, amount, accountNumber, name){
   save();
   return w;
 }
-
-
