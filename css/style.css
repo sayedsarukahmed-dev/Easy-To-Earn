@@ -199,3 +199,44 @@ select, textarea{font-family:inherit;}
 .empty-attract-icon{width:44px; height:44px; border-radius:50%; background:var(--bg-3); display:flex; align-items:center; justify-content:center; margin:0 auto 14px; color:var(--text-2);}
 .empty-attract-title{font-size:14.5px; font-weight:700; color:var(--text-0);}
 .empty-attract-sub{font-size:12.5px; color:var(--text-2); margin-top:8px; line-height:1.5;}
+
+/* Special "CPA" lettering wherever it appears as a highlighted word */
+.cpa-brand{
+  font-family: var(--font-num);
+  font-weight: 700;
+  letter-spacing: 1px;
+  background: linear-gradient(90deg, var(--gold), #F3D488);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.cpa-brand.on-gold{ background:none; -webkit-background-clip:unset; background-clip:unset; color:#241a04; }
+
+/* Money-flying animation behind the gate lock icon — attracts attention,
+   signals "this is a high-income area" without any emoji or childish styling */
+.lock-hero{ position:relative; overflow:hidden; }
+.money-fx{ position:absolute; inset:0; pointer-events:none; overflow:hidden; }
+.money-fx .coin{
+  position:absolute;
+  bottom:-10px;
+  font-family: var(--font-num);
+  font-weight:700;
+  font-size:15px;
+  color: var(--gold);
+  opacity:0;
+  animation: coinFloat 4.5s ease-in infinite;
+}
+.money-fx .c1{ left:18%; animation-delay:0s; }
+.money-fx .c2{ left:38%; animation-delay:0.9s; font-size:12px; }
+.money-fx .c3{ left:58%; animation-delay:1.8s; font-size:17px; }
+.money-fx .c4{ left:74%; animation-delay:2.6s; font-size:12px; }
+.money-fx .c5{ left:88%; animation-delay:1.3s; font-size:14px; }
+@keyframes coinFloat{
+  0%   { transform: translateY(0) scale(0.8); opacity:0; }
+  15%  { opacity:.55; }
+  80%  { opacity:.25; }
+  100% { transform: translateY(-160px) scale(1.1); opacity:0; }
+}
+.lock-icon, .lock-big-number, .lock-sub, .lock-progress-track, .lock-remaining, .lock-hero .btn{
+  position:relative; z-index:2;
+}
