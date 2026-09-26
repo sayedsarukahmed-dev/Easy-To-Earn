@@ -193,6 +193,19 @@ document.body.addEventListener("click", (e) => {
     return;
   }
 
+  if(action === "watch-gate-ad"){
+    openAdPlayer(({ completed }) => {
+      if(completed){
+        creditGateAdWatch();
+        toast(`Ad watched — ${state.gateAdsToday} counted towards unlock`, "success");
+        render();
+      }else{
+        toast("Ad skipped — not counted towards unlock", "warn");
+      }
+    });
+    return;
+  }
+
   if(action === "watch-burst"){
     let completedCount = 0;
     function playNext(){
