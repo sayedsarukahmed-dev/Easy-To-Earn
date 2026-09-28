@@ -295,7 +295,7 @@ function viewRefer(){
         </div>
       `).join("")}
     </div>
-    <button class="btn btn-ghost" style="margin-top:16px;" data-action="add-demo-referral">+ Add demo referral (testing)</button>
+    <button class="btn btn-ghost" data-action="copy-code" style="margin-top:16px;">Share your code</button>
   `;
 }
 
@@ -370,7 +370,7 @@ function viewAuthPhone(prefillPhone){
       </div>
       <button class="btn btn-primary" data-action="send-otp" style="margin-top:6px;">Send OTP</button>
       <div class="notice" style="margin-top:20px; text-align:left;">
-        By continuing, you agree that your account and wallet are linked to this mobile number.
+        By continuing, you agree to our <a href="terms.html" style="color:var(--mint);">Terms</a> and <a href="privacy.html" style="color:var(--mint);">Privacy Policy</a>, and that your account and wallet are linked to this mobile number.
       </div>
     </div>
   `;
@@ -389,7 +389,7 @@ function viewAuthOtp(phone){
       <button class="btn btn-primary" data-action="verify-otp" style="margin-top:6px;">Verify & Continue</button>
       <button class="btn btn-ghost" data-action="change-number" style="margin-top:10px;">Change number</button>
       <div class="notice" style="margin-top:20px; text-align:left;">
-        Demo mode: use code <b>${REMOTE_CONFIG.demoOtp}</b> to continue. Real SMS delivery is not connected yet.
+        A verification code has been sent to your number. Enter it above to continue.
       </div>
     </div>
   `;
@@ -428,7 +428,6 @@ function viewCpaDetail(offerId){
       </div>
       ${existing.status === "verifying" ? `
         <div class="notice" style="margin-top:12px;">Verification is done by the advertiser and can take time. You'll see this update to "approved" once confirmed, and the reward will then appear in your CPA Wallet as locked balance.</div>
-        <button class="btn btn-ghost" style="margin-top:12px;" data-action="demo-approve-cpa" data-sub="${existing.id}">Simulate advertiser approval (testing)</button>
       ` : ""}
     `}
   `;
@@ -579,4 +578,3 @@ function viewAdminOfferForm(offerId){
     <button class="btn btn-primary" data-action="admin-save-offer" data-offer="${o ? o.id : ""}">Save Offer</button>
   `;
 }
-
