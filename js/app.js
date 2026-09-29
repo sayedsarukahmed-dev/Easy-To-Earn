@@ -123,6 +123,10 @@ document.body.addEventListener("click", (e) => {
       const el = document.getElementById(`cfg-${key}`);
       if(el) patch[key] = parseFloat(el.value);
     }
+    if(section === "ads"){
+      const linkEl = document.getElementById("cfg-directAdLink");
+      if(linkEl) patch.directAdLink = linkEl.value.trim();
+    }
     saveConfig(patch);
     toast("Settings saved", "success");
     renderRoot();
