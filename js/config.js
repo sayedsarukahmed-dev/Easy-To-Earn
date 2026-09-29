@@ -24,6 +24,7 @@ const DEFAULT_CONFIG = {
   adSkipLockSeconds: 15,
   adGapMinutes: 5,            // forced interstitial gap
   dailyMinAdsGate: 12,        // ads required to unlock main CPA dashboard
+  directAdLink: "https://omg10.com/4/11920188",  // Monetag Direct Link zone — opened in a new tab when "Watch Ad" is tapped
   aiToolsGateAds: 3,          // ads required to unlock AI Tools & Extras dashboard
 
   // Referral
