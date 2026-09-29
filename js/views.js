@@ -501,6 +501,10 @@ function viewAdminPanel(){
       ${settingField("adGapMinutes", "Forced interstitial gap (minutes)", "1")}
       ${settingField("dailyMinAdsGate", "Ads to unlock main CPA dashboard", "1")}
       ${settingField("aiToolsGateAds", "Ads to unlock AI Tools & Extras", "1")}
+      <div class="field">
+        <label>Direct Link ad URL (Monetag)</label>
+        <input type="text" id="cfg-directAdLink" value="${REMOTE_CONFIG.directAdLink}">
+      </div>
       <button class="btn btn-primary" data-action="save-admin-section" data-section="ads">Save Ads Settings</button>
     </div>
 
