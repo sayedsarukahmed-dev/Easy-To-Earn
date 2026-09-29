@@ -1,3 +1,10 @@
+/* ============================================================
+   ADS.JS
+   Simulated rewarded-ad player. In the real native/web SDK:
+     - onAdCompleted()  -> only THIS path may call creditAdWatch()
+     - onAdSkipped() / onAdFailedToShow() -> no credit, no count
+   ============================================================ */
+
 function openAdPlayer(onDone){
   const lockSeconds = REMOTE_CONFIG.adSkipLockSeconds;
   let remaining = lockSeconds;
@@ -11,10 +18,20 @@ function openAdPlayer(onDone){
       <button class="ad-skip" id="ad-skip-btn">Skip</button>
     </div>
     <div class="ad-stage">
-      <div class="adbox">Ad playing…</div>
+      <div class="adbox" id="ad-status-box">Ad opened in a new tab.<br>Come back here when you're done.</div>
+      <a id="ad-manual-link" href="${REMOTE_CONFIG.directAdLink}" target="_blank" rel="noopener" style="display:none; color:var(--mint); font-size:13px; font-weight:600;">Tap here to open the ad</a>
     </div>
   `;
   document.body.appendChild(overlay);
+
+  // Open the real Monetag ad. Since this runs synchronously inside the
+  // user's tap on "Watch Ad", browsers generally allow it — but some
+  // mobile browsers block it anyway, so show a manual link as a fallback.
+  const adWindow = window.open(REMOTE_CONFIG.directAdLink, "_blank", "noopener");
+  if(!adWindow){
+    overlay.querySelector("#ad-status-box").textContent = "Tap the link below to open the ad.";
+    overlay.querySelector("#ad-manual-link").style.display = "inline-block";
+  }
 
   const timerEl = overlay.querySelector("#ad-timer");
   const skipBtn = overlay.querySelector("#ad-skip-btn");
@@ -41,14 +58,8 @@ function openAdPlayer(onDone){
     }
   });
 
-  function finish(){
-    cleanup();
-    onDone({ completed:true });
-  }
-
-  function cleanup(){
-    overlay.remove();
-  }
+  function finish(){ cleanup(); onDone({ completed:true }); }
+  function cleanup(){ overlay.remove(); }
 }
 
 function showSkipWarning(onConfirmSkip){
