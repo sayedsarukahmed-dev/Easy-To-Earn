@@ -1,60 +1,99 @@
 /* ============================================================
    ADS.JS
-   Simulated rewarded-ad player. In the real native/web SDK:
-     - onAdCompleted()  -> only THIS path may call creditAdWatch()
-     - onAdSkipped() / onAdFailedToShow() -> no credit, no count
+   Real ad flow via a Monetag Direct Link (opened in a new tab —
+   this format gives us no completion callback, unlike a native
+   rewarded-video SDK). To avoid crediting a reward when the ad
+   never actually opened (popup blocked, user backed out before
+   it loaded, etc.), the reward countdown does NOT start the
+   moment "Watch Ad" is tapped — it only starts once we have a
+   real signal the ad opened: either window.open() genuinely
+   succeeded (checked after a short delay, since some browsers
+   return a window object that is immediately closed), or the
+   user explicitly tapped the manual fallback link themselves.
+   No signal = no countdown = no reward, even if they later hit
+   Skip or just close the screen.
    ============================================================ */
 
 function openAdPlayer(onDone){
   const lockSeconds = REMOTE_CONFIG.adSkipLockSeconds;
   let remaining = lockSeconds;
   let completed = false;
+  let started = false;
+  let tick = null;
 
   const overlay = document.createElement("div");
   overlay.className = "ad-overlay";
   overlay.innerHTML = `
     <div class="ad-topbar">
-      <span class="ad-timer" id="ad-timer">0:${String(lockSeconds).padStart(2,"0")}</span>
+      <span class="ad-timer" id="ad-timer">Waiting…</span>
       <button class="ad-skip" id="ad-skip-btn">Skip</button>
     </div>
     <div class="ad-stage">
-      <div class="adbox" id="ad-status-box">Ad opened in a new tab.<br>Come back here when you're done.</div>
+      <div class="adbox" id="ad-status-box">Opening the ad…</div>
       <a id="ad-manual-link" href="${REMOTE_CONFIG.directAdLink}" target="_blank" rel="noopener" style="display:none; color:var(--mint); font-size:13px; font-weight:600;">Tap here to open the ad</a>
     </div>
   `;
   document.body.appendChild(overlay);
 
-  // Open the real Monetag ad. Since this runs synchronously inside the
-  // user's tap on "Watch Ad", browsers generally allow it — but some
-  // mobile browsers block it anyway, so show a manual link as a fallback.
-  const adWindow = window.open(REMOTE_CONFIG.directAdLink, "_blank", "noopener");
-  if(!adWindow){
-    overlay.querySelector("#ad-status-box").textContent = "Tap the link below to open the ad.";
-    overlay.querySelector("#ad-manual-link").style.display = "inline-block";
-  }
-
   const timerEl = overlay.querySelector("#ad-timer");
   const skipBtn = overlay.querySelector("#ad-skip-btn");
+  const statusBox = overlay.querySelector("#ad-status-box");
+  const manualLink = overlay.querySelector("#ad-manual-link");
 
-  const tick = setInterval(() => {
-    remaining -= 1;
-    if(remaining <= 0){
-      clearInterval(tick);
-      completed = true;
-      finish();
-      return;
-    }
+  function startCountdown(){
+    if(started) return;
+    started = true;
+    statusBox.textContent = "Ad opened in a new tab. Come back here when you're done.";
+    manualLink.style.display = "none";
     timerEl.textContent = `0:${String(remaining).padStart(2,"0")}`;
-  }, 1000);
+
+    tick = setInterval(() => {
+      remaining -= 1;
+      if(remaining <= 0){
+        clearInterval(tick);
+        completed = true;
+        finish();
+        return;
+      }
+      timerEl.textContent = `0:${String(remaining).padStart(2,"0")}`;
+    }, 1000);
+  }
+
+  function showManualFallback(){
+    statusBox.textContent = "Tap the link below to open the ad.";
+    manualLink.style.display = "inline-block";
+  }
+
+  // Try opening the real ad. Because some mobile browsers return a
+  // non-null window that is immediately closed (a "fake success"),
+  // we double-check shortly after before trusting it.
+  const adWindow = window.open(REMOTE_CONFIG.directAdLink, "_blank", "noopener");
+  setTimeout(() => {
+    if(adWindow && !adWindow.closed){
+      startCountdown();
+    }else{
+      showManualFallback();
+    }
+  }, 300);
+
+  // If the automatic open failed, the countdown only begins once the
+  // user themselves taps this link — a real signal of intent.
+  manualLink.addEventListener("click", () => {
+    startCountdown();
+  });
 
   skipBtn.addEventListener("click", () => {
     if(completed) return;
-    if(remaining > 0){
+    if(started && remaining > 0){
       showSkipWarning(() => {
         clearInterval(tick);
         cleanup();
         onDone({ completed:false });
       });
+    }else if(!started){
+      // Nothing was ever counted — safe to exit immediately, no reward.
+      cleanup();
+      onDone({ completed:false });
     }
   });
 
