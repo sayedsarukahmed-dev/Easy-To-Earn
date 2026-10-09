@@ -1,16 +1,14 @@
 /* ============================================================
+   SUPABASE CONNECTION
+   ============================================================ */
+const SUPABASE_URL = "https://jcktvomkvwxnkrfeknql.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_vjMF6SEYHtYmI-07DHCydQ_yEWVcijx";
+
+/* ============================================================
    CONFIG.JS
    All tunable numbers live here as DEFAULT_CONFIG. The Admin
    Panel writes overrides to localStorage; REMOTE_CONFIG below
-   is DEFAULT_CONFIG merged with those overrides, so every other
-   file just reads REMOTE_CONFIG as before.
-
-   IMPORTANT: once the real backend exists, this whole file's
-   role moves server-side (Firebase Remote Config / Firestore
-   "settings" doc + a real authenticated admin role) — this
-   localStorage version is only so the admin-panel UI/flow can
-   be built and tested now. adminPassword below is a PLACEHOLDER
-   and must never be relied on as real security.
+   is DEFAULT_CONFIG merged with those overrides.
    ============================================================ */
 
 const DEFAULT_CONFIG = {
@@ -22,10 +20,10 @@ const DEFAULT_CONFIG = {
   task100Reward: 0.20,
   task500Reward: 1.00,
   adSkipLockSeconds: 15,
-  adGapMinutes: 5,            // forced interstitial gap
-  dailyMinAdsGate: 12,        // ads required to unlock main CPA dashboard
-  directAdLink: "https://omg10.com/4/11920188",  // Monetag Direct Link zone — opened in a new tab when "Watch Ad" is tapped
-  aiToolsGateAds: 3,          // ads required to unlock AI Tools & Extras dashboard
+  adGapMinutes: 5,
+  dailyMinAdsGate: 12,
+  aiToolsGateAds: 3,
+  directAdLink: "https://omg10.com/4/11920188",
 
   // Referral
   referralAdsRequired: 50,
@@ -37,10 +35,10 @@ const DEFAULT_CONFIG = {
   withdrawMin: 100,
   adsLockDays: 7,
   cpaLockDays: 30,
-  userSharePercent: 45,        // default % of advertiser price given to user, per offer override possible
+  userSharePercent: 45,
 
   // Push notifications
-  pushPerDay: 3,               // fixed schedule: morning / evening / night, no reward to user
+  pushPerDay: 3,
 
   demoOtp: "123456",
 
@@ -55,7 +53,6 @@ const DEFAULT_CONFIG = {
     { level: 8, ads: 30000, reward: 170 },
   ],
 
-  // CPA offers — category is one of: easy | medium | extended | hardest | aitools
   cpaOffers: [
     {
       id: "cpa-quickinstall-1",
@@ -183,7 +180,6 @@ function loadConfig(){
 
 let REMOTE_CONFIG = loadConfig();
 
-// Persist a partial set of changed keys and refresh REMOTE_CONFIG in place
 function saveConfig(patch){
   let overrides = {};
   try{
