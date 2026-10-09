@@ -1,7 +1,7 @@
 const routes = { home: viewHome, earn: viewEarn, tasks: viewTasks, refer: viewRefer, wallet: viewWallet };
 let currentRoute = "home";
-let authStep = "phone";
-let pendingPhone = "";
+let authStep = "email";
+let pendingEmail = "";
 let activeWalletTab = "ads";
 
 function isAdminHash(){ return window.location.hash === "#admin"; }
@@ -25,7 +25,7 @@ function renderRoot(){
   if(!state.auth.verified){
     nav.style.display = "none";
     document.getElementById("app").innerHTML =
-      authStep === "otp" ? viewAuthOtp(pendingPhone) : viewAuthPhone(pendingPhone);
+      authStep === "otp" ? viewAuthOtp(pendingEmail) : viewAuthEmail(pendingEmail);
   }else{
     nav.style.display = "flex";
     render();
@@ -76,30 +76,39 @@ document.getElementById("bottomnav").addEventListener("click", (e) => {
   if(btn) goTo(btn.dataset.route);
 });
 
-document.body.addEventListener("click", (e) => {
+document.body.addEventListener("click", async (e) => {
   const btn = e.target.closest("[data-action]");
   if(!btn) return;
   const action = btn.dataset.action;
 
   // ---- Auth ----
-  if(action === "send-otp"){
-    const phone = document.getElementById("auth-phone").value.trim();
-    if(!/^\d{10}$/.test(phone)){ toast("Enter a valid 10-digit mobile number", "warn"); return; }
-    sendOtp(phone);
-    pendingPhone = phone;
-    authStep = "otp";
-    renderRoot();
-    toast("OTP sent", "success");
+  if(action === "send-email-otp"){
+    const email = document.getElementById("auth-email").value.trim();
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ toast("Enter a valid email address", "warn"); return; }
+    btn.disabled = true;
+    const res = await sendEmailOtp(email);
+    btn.disabled = false;
+    if(res.ok){
+      pendingEmail = email;
+      authStep = "otp";
+      renderRoot();
+      toast("Code sent to your email", "success");
+    }else{
+      toast(res.error || "Could not send code", "warn");
+    }
     return;
   }
-  if(action === "verify-otp"){
+  if(action === "verify-email-otp"){
     const code = document.getElementById("auth-otp").value.trim();
-    if(verifyOtp(pendingPhone, code)){ toast("Number verified", "success"); renderRoot(); }
-    else{ toast("Incorrect OTP", "warn"); }
+    btn.disabled = true;
+    const res = await verifyEmailOtp(pendingEmail, code);
+    btn.disabled = false;
+    if(res.ok){ toast("Email verified", "success"); renderRoot(); }
+    else{ toast(res.error || "Incorrect code", "warn"); }
     return;
   }
-  if(action === "change-number"){ authStep = "phone"; renderRoot(); return; }
-  if(action === "logout"){ logout(); authStep = "phone"; pendingPhone = ""; renderRoot(); return; }
+  if(action === "change-email"){ authStep = "email"; renderRoot(); return; }
+  if(action === "logout"){ await logout(); authStep = "email"; pendingEmail = ""; renderRoot(); return; }
 
   // ---- Admin ----
   if(action === "admin-login"){
@@ -292,4 +301,7 @@ document.body.addEventListener("click", (e) => {
   }
 });
 
-renderRoot();
+(async () => {
+  await restoreSession();
+  renderRoot();
+})();
