@@ -11,7 +11,7 @@ const STORE_KEY = "earnly_state_v1";
 
 function defaultState(){
   return {
-    auth: { phone: null, verified: false },
+    auth: { email: null, verified: false, userId: null },
     adsTotal: 0,
     adsToday: 0,
     gateAdsToday: 0,
@@ -62,22 +62,48 @@ function save(){
   localStorage.setItem(STORE_KEY, JSON.stringify(state));
 }
 
-// ---- Auth (simulated) ----
-function sendOtp(phone){
-  console.log("[DEMO] OTP for " + phone + " is " + REMOTE_CONFIG.demoOtp);
-  return true;
+// ---- Auth (real, via Supabase) ----
+// Sends a 6-digit code to the user's email. Returns { ok, error }.
+async function sendEmailOtp(email){
+  const { error } = await supabaseClient.auth.signInWithOtp({
+    email,
+    options: { shouldCreateUser: true },
+  });
+  if(error) return { ok:false, error: error.message };
+  return { ok:true };
 }
-function verifyOtp(phone, code){
-  if(code === REMOTE_CONFIG.demoOtp){
-    state.auth = { phone, verified: true };
+
+// Verifies the code the user typed. On success, stores the real
+// Supabase user id — this id is what every future database read/
+// write will be scoped to (via Row Level Security), not anything
+// the client can fake.
+async function verifyEmailOtp(email, code){
+  const { data, error } = await supabaseClient.auth.verifyOtp({
+    email, token: code, type: "email",
+  });
+  if(error || !data.user) return { ok:false, error: error ? error.message : "Verification failed" };
+  state.auth = { email, verified: true, userId: data.user.id };
+  save();
+  return { ok:true };
+}
+
+async function logout(){
+  await supabaseClient.auth.signOut();
+  state.auth = { email: null, verified: false, userId: null };
+  save();
+}
+
+// Restores the session on page reload, if Supabase still has one
+// (supabase-js persists its own session in localStorage separately
+// from our app's STORE_KEY).
+async function restoreSession(){
+  const { data } = await supabaseClient.auth.getSession();
+  if(data.session && data.session.user){
+    state.auth = { email: data.session.user.email, verified: true, userId: data.session.user.id };
     save();
     return true;
   }
   return false;
-}
-function logout(){
-  state.auth = { phone: null, verified: false };
-  save();
 }
 
 // ---- Ledger (locked-balance system, shared by both wallets) ----
