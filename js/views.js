@@ -355,41 +355,38 @@ function viewWallet(){
   `;
 }
 
-function viewAuthPhone(prefillPhone){
+function viewAuthEmail(prefillEmail){
   return `
     <div class="auth-wrap">
       <div class="brand-mark" style="width:52px; height:52px; font-size:24px; margin-bottom:18px;">E</div>
-      <div class="auth-title">Welcome to Earnly<div class="hi" style="font-size:14px;">Earnly में आपका स्वागत है</div></div>
-      <div class="auth-sub">Enter your mobile number to continue</div>
+      <div class="auth-title">Welcome to Easy To Earn<div class="hi" style="font-size:14px;">Easy To Earn में आपका स्वागत है</div></div>
+      <div class="auth-sub">Enter your email to continue</div>
       <div class="field" style="margin-top:22px; width:100%;">
-        <label>Mobile number</label>
-        <div class="phone-input">
-          <span class="phone-prefix">+91</span>
-          <input type="tel" id="auth-phone" placeholder="98765 43210" maxlength="10" inputmode="numeric" value="${prefillPhone || ""}">
-        </div>
+        <label>Email address</label>
+        <input type="email" id="auth-email" placeholder="you@example.com" value="${prefillEmail || ""}" style="width:100%; padding:13px 14px; border-radius:10px; background:var(--bg-1); border:1px solid var(--line); color:var(--text-0); font-size:14.5px; font-family:inherit;">
       </div>
-      <button class="btn btn-primary" data-action="send-otp" style="margin-top:6px;">Send OTP</button>
+      <button class="btn btn-primary" data-action="send-email-otp" style="margin-top:6px;">Send Code</button>
       <div class="notice" style="margin-top:20px; text-align:left;">
-        By continuing, you agree to our <a href="terms.html" style="color:var(--mint);">Terms</a> and <a href="privacy.html" style="color:var(--mint);">Privacy Policy</a>, and that your account and wallet are linked to this mobile number.
+        By continuing, you agree to our <a href="terms.html" style="color:var(--mint);">Terms</a> and <a href="privacy.html" style="color:var(--mint);">Privacy Policy</a>, and that your account and wallet are linked to this email.
       </div>
     </div>
   `;
 }
 
-function viewAuthOtp(phone){
+function viewAuthOtp(email){
   return `
     <div class="auth-wrap">
       <div class="brand-mark" style="width:52px; height:52px; font-size:24px; margin-bottom:18px;">E</div>
-      <div class="auth-title">Verify your number</div>
-      <div class="auth-sub">Code sent to +91 ${phone}</div>
+      <div class="auth-title">Verify your email</div>
+      <div class="auth-sub">Code sent to ${email}</div>
       <div class="field" style="margin-top:22px; width:100%;">
-        <label>Enter OTP</label>
+        <label>Enter code</label>
         <input type="tel" id="auth-otp" placeholder="6-digit code" maxlength="6" inputmode="numeric" style="width:100%; padding:13px 14px; border-radius:10px; background:var(--bg-1); border:1px solid var(--line); color:var(--text-0); font-size:18px; letter-spacing:4px; text-align:center; font-family:var(--font-num);">
       </div>
-      <button class="btn btn-primary" data-action="verify-otp" style="margin-top:6px;">Verify & Continue</button>
-      <button class="btn btn-ghost" data-action="change-number" style="margin-top:10px;">Change number</button>
+      <button class="btn btn-primary" data-action="verify-email-otp" style="margin-top:6px;">Verify & Continue</button>
+      <button class="btn btn-ghost" data-action="change-email" style="margin-top:10px;">Change email</button>
       <div class="notice" style="margin-top:20px; text-align:left;">
-        A verification code has been sent to your number. Enter it above to continue.
+        A verification code has been sent to your email. Enter it above to continue. Check your Spam folder if you don't see it within a minute.
       </div>
     </div>
   `;
