@@ -73,7 +73,7 @@ window.addEventListener("hashchange", renderRoot);
 
 document.getElementById("bottomnav").addEventListener("click", (e) => {
   const btn = e.target.closest(".navbtn");
-  if(btn) goTo(btn.dataset.route);
+    if(btn && state.auth.verified) goTo(btn.dataset.route);
 });
 
 document.body.addEventListener("click", async (e) => {
@@ -300,8 +300,8 @@ document.body.addEventListener("click", async (e) => {
     return;
   }
 });
-
 (async () => {
-  await restoreSession();
+  try { await restoreSession(); } catch(e){ console.error(e); }
   renderRoot();
 })();
+
