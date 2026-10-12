@@ -88,7 +88,7 @@ async function verifyEmailOtp(email, code){
 }
 
 async function logout(){
-  await supabaseClient.auth.signOut();
+  try { await supabaseClient.auth.signOut(); } catch(e){ console.error(e); }
   state.auth = { email: null, verified: false, userId: null };
   save();
 }
@@ -103,6 +103,8 @@ async function restoreSession(){
     save();
     return true;
   }
+  state.auth = { email: null, verified: false, userId: null };
+  save();
   return false;
 }
 
