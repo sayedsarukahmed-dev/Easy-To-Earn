@@ -355,38 +355,24 @@ function viewWallet(){
   `;
 }
 
-function viewAuthEmail(prefillEmail){
+function viewAuthPhone(){
   return `
     <div class="auth-wrap">
       <div class="brand-mark" style="width:52px; height:52px; font-size:24px; margin-bottom:18px;">E</div>
       <div class="auth-title">Welcome to Easy To Earn<div class="hi" style="font-size:14px;">Easy To Earn में आपका स्वागत है</div></div>
-      <div class="auth-sub">Enter your email to continue</div>
+      <div class="auth-sub">Enter your phone number and password</div>
       <div class="field" style="margin-top:22px; width:100%;">
-        <label>Email address</label>
-        <input type="email" id="auth-email" placeholder="you@example.com" value="${prefillEmail || ""}" style="width:100%; padding:13px 14px; border-radius:10px; background:var(--bg-1); border:1px solid var(--line); color:var(--text-0); font-size:14.5px; font-family:inherit;">
+        <label>Phone number</label>
+        <input type="tel" id="auth-phone" placeholder="10-digit mobile number" style="width:100%; padding:13px 14px; border-radius:10px; background:var(--bg-1); border:1px solid var(--line); color:var(--text-0); font-size:14.5px; font-family:inherit;">
       </div>
-      <button class="btn btn-primary" data-action="send-email-otp" style="margin-top:6px;">Send Code</button>
+      <div class="field" style="width:100%;">
+        <label>Password</label>
+        <input type="password" id="auth-password" placeholder="Minimum 6 characters" style="width:100%; padding:13px 14px; border-radius:10px; background:var(--bg-1); border:1px solid var(--line); color:var(--text-0); font-size:14.5px; font-family:inherit;">
+      </div>
+      <button class="btn btn-primary" data-action="phone-login" style="margin-top:6px;">Log In</button>
+      <button class="btn btn-ghost" data-action="phone-signup" style="margin-top:10px;">New here? Sign Up</button>
       <div class="notice" style="margin-top:20px; text-align:left;">
-        By continuing, you agree to our <a href="terms.html" style="color:var(--mint);">Terms</a> and <a href="privacy.html" style="color:var(--mint);">Privacy Policy</a>, and that your account and wallet are linked to this email.
-      </div>
-    </div>
-  `;
-}
-
-function viewAuthOtp(email){
-  return `
-    <div class="auth-wrap">
-      <div class="brand-mark" style="width:52px; height:52px; font-size:24px; margin-bottom:18px;">E</div>
-      <div class="auth-title">Verify your email</div>
-      <div class="auth-sub">Code sent to ${email}</div>
-      <div class="field" style="margin-top:22px; width:100%;">
-        <label>Enter code</label>
-        <input type="tel" id="auth-otp" placeholder="6-digit code" maxlength="6" inputmode="numeric" style="width:100%; padding:13px 14px; border-radius:10px; background:var(--bg-1); border:1px solid var(--line); color:var(--text-0); font-size:18px; letter-spacing:4px; text-align:center; font-family:var(--font-num);">
-      </div>
-      <button class="btn btn-primary" data-action="verify-email-otp" style="margin-top:6px;">Verify & Continue</button>
-      <button class="btn btn-ghost" data-action="change-email" style="margin-top:10px;">Change email</button>
-      <div class="notice" style="margin-top:20px; text-align:left;">
-        A verification code has been sent to your email. Enter it above to continue. Check your Spam folder if you don't see it within a minute.
+        By continuing, you agree to our <a href="terms.html" style="color:var(--mint);">Terms</a> and <a href="privacy.html" style="color:var(--mint);">Privacy Policy</a>.
       </div>
     </div>
   `;
