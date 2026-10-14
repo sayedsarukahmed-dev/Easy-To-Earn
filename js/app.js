@@ -79,18 +79,25 @@ document.body.addEventListener("click", async (e) => {
   const action = btn.dataset.action;
 
   // ---- Auth ----
-  if(action === "phone-signup" || action === "phone-login"){
+    if(action === "phone-signup" || action === "phone-login"){
     const phone = document.getElementById("auth-phone").value.trim();
     const password = document.getElementById("auth-password").value;
     if(!/^[0-9]{10}$/.test(phone)){ toast("Enter a valid 10-digit phone number", "warn"); return; }
     if(!password || password.length < 6){ toast("Password must be at least 6 characters", "warn"); return; }
     btn.disabled = true;
-    const res = action === "phone-signup" ? await signUpPhone(phone, password) : await loginPhone(phone, password);
-    btn.disabled = false;
-    if(res.ok){ toast("Welcome!", "success"); renderRoot(); }
-    else{ toast(res.error || "Something went wrong", "warn"); }
+    try{
+      const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error("Request timed out, check your internet")), 12000));
+      const call = action === "phone-signup" ? signUpPhone(phone, password) : loginPhone(phone, password);
+      const res = await Promise.race([call, timeout]);
+      if(res.ok){ toast("Welcome!", "success"); renderRoot(); }
+      else{ toast(res.error || "Something went wrong", "warn"); }
+    }catch(err){
+      toast(err.message || "Network error, please try again", "warn");
+    }finally{
+      btn.disabled = false;
+    }
     return;
-  }
+    }
   if(action === "logout"){ await logout(); renderRoot(); return; }
 
   // ---- Admin ----
