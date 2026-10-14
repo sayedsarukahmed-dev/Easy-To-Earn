@@ -267,4 +267,4 @@ function requestWithdrawal(wallet, amount, accountNumber, name){
   state.ledger = state.ledger.filter(e => e.amount > 0.0001);
   save();
   return w;
-}
+     }
