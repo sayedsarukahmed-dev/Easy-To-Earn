@@ -11,7 +11,7 @@ const STORE_KEY = "earnly_state_v1";
 
 function defaultState(){
   return {
-    auth: { email: null, verified: false, userId: null },
+    auth: { phone: null, verified: false, userId: null },
     adsTotal: 0,
     adsToday: 0,
     gateAdsToday: 0,
@@ -62,34 +62,38 @@ function save(){
   localStorage.setItem(STORE_KEY, JSON.stringify(state));
 }
 
-// ---- Auth (real, via Supabase) ----
-// Sends a 6-digit code to the user's email. Returns { ok, error }.
-async function sendEmailOtp(email){
-  const { error } = await supabaseClient.auth.signInWithOtp({
-    email,
-    options: { shouldCreateUser: true },
-  });
+// ---- Auth (phone + password, via Supabase email system internally) ----
+// Supabase's free tier needs a working email system for OTP/magic-links,
+// but sending real email reliably needs a verified domain. To avoid that
+// requirement entirely, we store each user under a fake, never-sent email
+// built from their phone number, and use plain email+password auth under
+// the hood. The user only ever sees "phone number" and "password".
+function phoneToEmail(phone){
+  return phone.replace(/[^0-9]/g, "") + "@phoneuser.easytoearn.app";
+}
+
+async function signUpPhone(phone, password){
+  const fakeEmail = phoneToEmail(phone);
+  const { data, error } = await supabaseClient.auth.signUp({ email: fakeEmail, password });
   if(error) return { ok:false, error: error.message };
+  if(!data.user) return { ok:false, error: "Signup failed, try again" };
+  state.auth = { phone, verified: true, userId: data.user.id };
+  save();
   return { ok:true };
 }
 
-// Verifies the code the user typed. On success, stores the real
-// Supabase user id — this id is what every future database read/
-// write will be scoped to (via Row Level Security), not anything
-// the client can fake.
-async function verifyEmailOtp(email, code){
-  const { data, error } = await supabaseClient.auth.verifyOtp({
-    email, token: code, type: "email",
-  });
-  if(error || !data.user) return { ok:false, error: error ? error.message : "Verification failed" };
-  state.auth = { email, verified: true, userId: data.user.id };
+async function loginPhone(phone, password){
+  const fakeEmail = phoneToEmail(phone);
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email: fakeEmail, password });
+  if(error) return { ok:false, error: error.message };
+  state.auth = { phone, verified: true, userId: data.user.id };
   save();
   return { ok:true };
 }
 
 async function logout(){
   try { await supabaseClient.auth.signOut(); } catch(e){ console.error(e); }
-  state.auth = { email: null, verified: false, userId: null };
+  state.auth = { phone: null, verified: false, userId: null };
   save();
 }
 
@@ -99,11 +103,13 @@ async function logout(){
 async function restoreSession(){
   const { data } = await supabaseClient.auth.getSession();
   if(data.session && data.session.user){
-    state.auth = { email: data.session.user.email, verified: true, userId: data.session.user.id };
+    const email = data.session.user.email || "";
+    const phone = email.split("@")[0];
+    state.auth = { phone, verified: true, userId: data.session.user.id };
     save();
     return true;
   }
-  state.auth = { email: null, verified: false, userId: null };
+  state.auth = { phone: null, verified: false, userId: null };
   save();
   return false;
 }
