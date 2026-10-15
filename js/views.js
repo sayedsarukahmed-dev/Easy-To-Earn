@@ -346,4 +346,261 @@ function viewWallet(){
         <li>Only "Available" balance can be withdrawn — locked amounts unlock automatically over time</li>
         <li>Status shows "Processing" until verified — it only shows "Success" after the real transfer completes</li>
       </ul>
-      <div class="hi">न्यूनतम निकासी ₹${REMOTE_CONFIG.withdrawMin}। केवल "उपलब्ध" राशि ही निकाली जा सकती है। असली ट्रांसफर पूरा होने के बाद ही "Success"
+      <div class="hi">न्यूनतम निकासी ₹${REMOTE_CONFIG.withdrawMin}। केवल "उपलब्ध" राशि ही निकाली जा सकती है। असली ट्रांसफर पूरा होने के बाद ही "Success" दिखेगा।</div>
+    </div>
+    ${activeWalletTab === "ads"
+      ? walletBlock("ads", ads, "Ads Wallet", "एड्स वॉलेट", false)
+      : walletBlock("cpa", cpa, "CPA Premium Wallet", "सीपीए प्रीमियम वॉलेट", true)}
+    <button class="btn btn-ghost" data-action="open-history">View Transaction History</button>
+  `;
+}
+
+function viewAuthPhone(){
+  return `
+    <div class="auth-wrap">
+      <div class="brand-mark" style="width:52px; height:52px; font-size:24px; margin-bottom:18px;">E</div>
+      <div class="auth-title">Welcome to Easy To Earn<div class="hi" style="font-size:14px;">Easy To Earn में आपका स्वागत है</div></div>
+      <div class="auth-sub">Enter your phone number and password</div>
+      <div class="field" style="margin-top:22px; width:100%;">
+        <label>Phone number</label>
+        <input type="tel" id="auth-phone" placeholder="10-digit mobile number" style="width:100%; padding:13px 14px; border-radius:10px; background:var(--bg-1); border:1px solid var(--line); color:var(--text-0); font-size:14.5px; font-family:inherit;">
+      </div>
+      <div class="field" style="width:100%;">
+        <label>Password</label>
+        <input type="password" id="auth-password" placeholder="Minimum 6 characters" style="width:100%; padding:13px 14px; border-radius:10px; background:var(--bg-1); border:1px solid var(--line); color:var(--text-0); font-size:14.5px; font-family:inherit;">
+      </div>
+      <button class="btn btn-primary" data-action="phone-login" style="margin-top:6px;">Log In</button>
+      <button class="btn btn-ghost" data-action="phone-signup" style="margin-top:10px;">New here? Sign Up</button>
+      <div class="notice" style="margin-top:20px; text-align:left;">
+        By continuing, you agree to our <a href="terms.html" style="color:var(--mint);">Terms</a> and <a href="privacy.html" style="color:var(--mint);">Privacy Policy</a>.
+      </div>
+    </div>
+  `;
+}
+
+function cpaStatusSteps(sub){
+  const steps = [
+    { key: "submitted", label: "Submitted" },
+    { key: "verifying", label: "Under Review" },
+    { key: "approved", label: "Reward Credited" },
+  ];
+  const currentIndex = sub.status === "approved" ? 2 : sub.status === "rejected" ? 1 : 1;
+  const isRejected = sub.status === "rejected";
+
+  return `
+    <div class="status-tracker">
+      ${steps.map((s, i) => {
+        const done = i < currentIndex || (i === currentIndex && sub.status === "approved");
+        const active = i === currentIndex && sub.status !== "approved" && !isRejected;
+        return `
+          <div class="status-step ${done ? "done" : ""} ${active ? "active" : ""} ${isRejected && i === 1 ? "rejected" : ""}">
+            <div class="status-dot"></div>
+            <div class="status-label">${isRejected && i === 1 ? "Verification Issue" : s.label}</div>
+          </div>
+          ${i < steps.length - 1 ? `<div class="status-line ${done ? "done" : ""}"></div>` : ""}
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
+function viewCpaDetail(offerId){
+  const o = REMOTE_CONFIG.cpaOffers.find(x => x.id === offerId);
+  const existing = state.cpaSubmissions.find(s => s.offerId === offerId);
+
+  let statusMessage = "";
+  if(existing){
+    if(existing.status === "approved"){
+      statusMessage = "Your reward has been credited to your CPA Wallet. It will be available to withdraw once the lock period ends.";
+    }else if(existing.status === "rejected"){
+      statusMessage = "We could not verify this submission. If you believe this is a mistake, please make sure you completed every step above correctly and try the task again.";
+    }else if(o && o.category === "hardest"){
+      const verifyDate = existing.verifyAt ? new Date(existing.verifyAt) : null;
+      statusMessage = verifyDate
+        ? `This task requires extra verification. We expect to confirm your submission by ${verifyDate.toLocaleString("en-IN", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" })}. You do not need to do anything else — this page will update automatically.`
+        : "This task is under review. You do not need to do anything else.";
+    }else{
+      statusMessage = "Your submission is being reviewed. This is usually quick.";
+    }
+  }
+
+  return `
+    <div class="screen-back" data-action="close-screen">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 18l-6-6 6-6"/></svg> Back
+    </div>
+    <div class="task-header">
+      <span class="task-tag ${o.category}">${CATEGORY_LABEL[o.category] || o.category}</span>
+      <div class="task-title">${o.title}</div>
+      <div class="task-meta-row"><span>Reward: <b style="color:var(--gold);">₹${o.reward}</b></span><span>Time: ${o.timeRequired}</span></div>
+    </div>
+
+    <div class="section-title">How to complete this task</div>
+    <div class="notice" style="text-align:left;">${o.description}</div>
+    ${o.steps.map((s,i) => `<div class="step-item"><div class="step-num">${i+1}</div><div class="step-text">${s}</div></div>`).join("")}
+
+    <div class="section-title">Before you start</div>
+    <div class="notice warn" style="text-align:left;"><ul>${o.importantInfo.map(i => `<li>${i}</li>`).join("")}</ul></div>
+
+    ${!existing ? `
+      <div class="section-title">Submit for verification</div>
+      <div class="field"><label>Registered number / proof link</label><input type="text" id="cpa-proof-${o.id}" placeholder="e.g. your registered mobile number"></div>
+      <button class="btn btn-primary" data-action="submit-cpa" data-offer="${o.id}">Submit</button>
+    ` : `
+      <div class="section-title">Status</div>
+      ${cpaStatusSteps(existing)}
+      <div class="notice" style="margin-top:14px; text-align:left;">${statusMessage}</div>
+      <div class="action-card" style="margin-top:14px;">
+        <div class="action-body">
+          <div class="action-title">Submitted</div>
+          <div class="action-meta">${new Date(existing.submittedAt).toLocaleString("en-IN", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" })}</div>
+        </div>
+      </div>
+    `}
+  `;
+}
+
+function viewHistory(){
+  const items = [
+    ...state.ledger.map(e => ({ title:e.source, sub:`${e.wallet === "cpa" ? "CPA Wallet" : "Ads Wallet"} · unlocks ${new Date(e.unlockAt).toLocaleDateString("en-IN")}`, amount:e.amount, date:e.creditedAt, positive:true })),
+    ...state.withdrawals.map(w => ({ title:`Withdrawal — ${w.wallet === "cpa" ? "CPA" : "Ads"} Wallet`, sub:w.status, amount:w.amount, date:w.date, positive:false })),
+  ].sort((a,b) => new Date(b.date) - new Date(a.date));
+  return `
+    <div class="screen-back" data-action="close-screen">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 18l-6-6 6-6"/></svg> Back
+    </div>
+    <div class="task-title" style="margin-bottom:16px;">Transaction History</div>
+    ${items.length === 0 ? `<div class="empty-state"><p>No transactions yet.</p></div>` :
+      `<div class="card-list" style="background:var(--bg-1); border:1px solid var(--line); border-radius:var(--radius-m); padding:4px 16px;">
+        ${items.map(i => `
+          <div class="history-row">
+            <div class="history-left"><div class="t">${i.title}</div><div class="d">${new Date(i.date).toLocaleString("en-IN")} · ${i.sub}</div></div>
+            <div class="history-amt ${i.positive ? "pos" : "neg"}">${i.positive ? "+" : "-"}₹${fmtMoney(i.amount)}</div>
+          </div>
+        `).join("")}
+      </div>`
+    }
+  `;
+}
+
+/* ================= ADMIN PANEL ================= */
+
+let adminLoggedIn = false;
+
+function viewAdminNotAuthorized(){
+  return `
+    <div class="auth-wrap">
+      <div class="brand-mark" style="width:52px; height:52px; font-size:24px; margin-bottom:18px;">A</div>
+      <div class="auth-title">Access Restricted</div>
+      <div class="auth-sub">This account does not have admin access.</div>
+      <button class="btn btn-ghost" data-action="admin-logout" style="margin-top:20px;">Go Back</button>
+    </div>
+  `;
+}
+
+function settingField(key, label, step){
+  return `
+    <div class="field">
+      <label>${label}</label>
+      <input type="number" step="${step || "0.01"}" id="cfg-${key}" value="${REMOTE_CONFIG[key]}">
+    </div>
+  `;
+}
+
+function viewAdminPanel(){
+  return `
+    <div class="topbar">
+      <div class="brand"><div class="brand-name">Admin Panel</div></div>
+      <button class="logout-link" data-action="admin-logout">Exit</button>
+    </div>
+
+    <div class="section-title">Ads & Gates</div>
+    <div class="admin-card">
+      ${settingField("perAdReward", "Reward per ad (₹)")}
+      ${settingField("dailyOpenBonus", "Daily open bonus (₹)")}
+      ${settingField("task100Reward", "100-ads task bonus (₹)")}
+      ${settingField("task500Reward", "500-ads task bonus (₹)")}
+      ${settingField("adSkipLockSeconds", "Ad skip-lock (seconds)", "1")}
+      ${settingField("adGapMinutes", "Forced interstitial gap (minutes)", "1")}
+      ${settingField("dailyMinAdsGate", "Ads to unlock main CPA dashboard", "1")}
+      ${settingField("aiToolsGateAds", "Ads to unlock AI Tools & Extras", "1")}
+      <div class="field">
+        <label>Direct Link ad URL (Monetag)</label>
+        <input type="text" id="cfg-directAdLink" value="${REMOTE_CONFIG.directAdLink}">
+      </div>
+      <button class="btn btn-primary" data-action="save-admin-section" data-section="ads">Save Ads Settings</button>
+    </div>
+
+    <div class="section-title">Wallet & Withdrawal</div>
+    <div class="admin-card">
+      ${settingField("withdrawMin", "Minimum withdrawal (₹)", "1")}
+      ${settingField("adsLockDays", "Ads Wallet lock period (days)", "1")}
+      ${settingField("cpaLockDays", "CPA Wallet lock period (days)", "1")}
+      ${settingField("userSharePercent", "Default user share of CPA price (%)", "1")}
+      <button class="btn btn-primary" data-action="save-admin-section" data-section="wallet">Save Wallet Settings</button>
+    </div>
+
+    <div class="section-title">Referral</div>
+    <div class="admin-card">
+      ${settingField("referralAdsRequired", "Ads required from referred user", "1")}
+      ${settingField("referralDaysRequired", "Days active required", "1")}
+      ${settingField("referralBonusReferrer", "Bonus to referrer (₹)")}
+      ${settingField("referralBonusNewUser", "Bonus to new user (₹)")}
+      <button class="btn btn-primary" data-action="save-admin-section" data-section="referral">Save Referral Settings</button>
+    </div>
+
+    <div class="section-title">Push Notifications</div>
+    <div class="admin-card">
+      ${settingField("pushPerDay", "Notifications per day", "1")}
+      <button class="btn btn-primary" data-action="save-admin-section" data-section="push">Save</button>
+    </div>
+
+    <div class="section-title">CPA Offers</div>
+    <div class="card-list" style="margin-bottom:14px;">
+      ${REMOTE_CONFIG.cpaOffers.map(o => `
+        <div class="action-card">
+          <div class="action-body">
+            <div class="action-title">${o.title}</div>
+            <div class="action-meta">${CATEGORY_LABEL[o.category]} · ₹${o.reward} · ${(o.slotsUsed||0)}/${o.slots} used</div>
+          </div>
+          <button class="btn btn-ghost" style="width:auto; padding:8px 12px; margin-right:6px;" data-action="admin-edit-offer" data-offer="${o.id}">Edit</button>
+          <button class="btn btn-danger-outline" style="width:auto; padding:8px 12px;" data-action="admin-delete-offer" data-offer="${o.id}">Delete</button>
+        </div>
+      `).join("")}
+    </div>
+    <button class="btn btn-ghost" data-action="admin-new-offer">+ Add New CPA Offer</button>
+  `;
+}
+
+function viewAdminOfferForm(offerId){
+  const o = offerId ? REMOTE_CONFIG.cpaOffers.find(x => x.id === offerId) : null;
+  return `
+    <div class="screen-back" data-action="admin-close-offer-form">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 18l-6-6 6-6"/></svg> Back
+    </div>
+    <div class="task-title" style="margin-bottom:16px;">${o ? "Edit Offer" : "Add New CPA Offer"}</div>
+
+    <div class="field"><label>Title</label><input type="text" id="of-title" value="${o ? o.title : ""}"></div>
+    <div class="field">
+      <label>Category</label>
+      <select id="of-category" style="width:100%; padding:13px 14px; border-radius:10px; background:var(--bg-1); border:1px solid var(--line); color:var(--text-0); font-size:14.5px;">
+        ${Object.keys(CATEGORY_LABEL).map(c => `<option value="${c}" ${o && o.category===c ? "selected" : ""}>${CATEGORY_LABEL[c]}</option>`).join("")}
+      </select>
+    </div>
+    <div class="field"><label>Advertiser price paid to us (₹) — reference only</label><input type="number" id="of-advprice" value="${o ? o.advertiserPrice : ""}"></div>
+    <div class="field"><label>User reward (₹) — what the user actually gets</label><input type="number" id="of-reward" value="${o ? o.reward : ""}"></div>
+    <div class="field"><label>Time required</label><input type="text" id="of-time" value="${o ? o.timeRequired : ""}" placeholder="e.g. 5 minutes"></div>
+    <div class="field"><label>Link</label><input type="text" id="of-link" value="${o ? o.link : "#"}"></div>
+    <div class="field"><label>Description</label><input type="text" id="of-desc" value="${o ? o.description : ""}"></div>
+    <div class="field">
+      <label>Steps (one per line)</label>
+      <textarea id="of-steps" rows="5" style="width:100%; padding:13px 14px; border-radius:10px; background:var(--bg-1); border:1px solid var(--line); color:var(--text-0); font-size:13.5px; font-family:inherit;">${o ? o.steps.join("\n") : ""}</textarea>
+    </div>
+    <div class="field">
+      <label>Important info (one per line)</label>
+      <textarea id="of-info" rows="4" style="width:100%; padding:13px 14px; border-radius:10px; background:var(--bg-1); border:1px solid var(--line); color:var(--text-0); font-size:13.5px; font-family:inherit;">${o ? o.importantInfo.join("\n") : ""}</textarea>
+    </div>
+    <div class="field"><label>Slots (max completions)</label><input type="number" id="of-slots" value="${o ? o.slots : 100}"></div>
+
+    <button class="btn btn-primary" data-action="admin-save-offer" data-offer="${o ? o.id : ""}">Save Offer</button>
+  `;
+}
