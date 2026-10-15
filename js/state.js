@@ -268,3 +268,52 @@ function requestWithdrawal(wallet, amount, accountNumber, name){
   save();
   return w;
      }
+// ---- Admin check & CRUD (writes blocked server-side unless you're in admins table) ----
+async function checkIsAdmin(){
+  if(!state.auth.userId) return false;
+  const { data, error } = await supabaseClient.from('admins').select('user_id').eq('user_id', state.auth.userId).maybeSingle();
+  if(error){ console.error(error); return false; }
+  return !!data;
+}
+
+async function adminInsertOffer(offer){
+  const { error } = await supabaseClient.from('cpa_offers').insert({
+    id: offer.id,
+    category: offer.category,
+    title: offer.title,
+    advertiser_price: offer.advertiserPrice,
+    reward: offer.reward,
+    time_required: offer.timeRequired,
+    link: offer.link,
+    description: offer.description,
+    steps: offer.steps,
+    important_info: offer.importantInfo,
+    slots: offer.slots,
+    slots_used: 0,
+  });
+  if(error) console.error(error);
+  return !error;
+}
+
+async function adminUpdateOffer(offer){
+  const { error } = await supabaseClient.from('cpa_offers').update({
+    category: offer.category,
+    title: offer.title,
+    advertiser_price: offer.advertiserPrice,
+    reward: offer.reward,
+    time_required: offer.timeRequired,
+    link: offer.link,
+    description: offer.description,
+    steps: offer.steps,
+    important_info: offer.importantInfo,
+    slots: offer.slots,
+  }).eq('id', offer.id);
+  if(error) console.error(error);
+  return !error;
+}
+
+async function adminDeleteOffer(id){
+  const { error } = await supabaseClient.from('cpa_offers').delete().eq('id', id);
+  if(error) console.error(error);
+  return !error;
+}
