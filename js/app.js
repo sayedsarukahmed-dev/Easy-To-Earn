@@ -1,6 +1,7 @@
 const routes = { home: viewHome, earn: viewEarn, tasks: viewTasks, refer: viewRefer, wallet: viewWallet };
 let currentRoute = "home";
 let activeWalletTab = "ads";
+let adminCheckDone = false;
 
 function isAdminHash(){ return window.location.hash === "#admin"; }
 
@@ -16,7 +17,20 @@ function renderRoot(){
 
   if(isAdminHash()){
     nav.style.display = "none";
-    document.getElementById("app").innerHTML = adminLoggedIn ? viewAdminPanel() : viewAdminLogin();
+    if(!state.auth.verified){
+      document.getElementById("app").innerHTML = viewAuthPhone();
+      return;
+    }
+    if(!adminCheckDone){
+      document.getElementById("app").innerHTML = `<div class="auth-wrap"><div class="auth-sub">Checking access…</div></div>`;
+      checkIsAdmin().then(isAdmin => {
+        adminLoggedIn = isAdmin;
+        adminCheckDone = true;
+        renderRoot();
+      });
+      return;
+    }
+    document.getElementById("app").innerHTML = adminLoggedIn ? viewAdminPanel() : viewAdminNotAuthorized();
     return;
   }
 
@@ -66,7 +80,7 @@ function closeScreen(){
   activeScreenRenderer = null;
 }
 
-window.addEventListener("hashchange", renderRoot);
+window.addEventListener("hashchange", () => { adminCheckDone = false; renderRoot(); });
 
 document.getElementById("bottomnav").addEventListener("click", (e) => {
   const btn = e.target.closest(".navbtn");
@@ -79,7 +93,7 @@ document.body.addEventListener("click", async (e) => {
   const action = btn.dataset.action;
 
   // ---- Auth ----
-    if(action === "phone-signup" || action === "phone-login"){
+  if(action === "phone-signup" || action === "phone-login"){
     const phone = document.getElementById("auth-phone").value.trim();
     const password = document.getElementById("auth-password").value;
     if(!/^[0-9]{10}$/.test(phone)){ toast("Enter a valid 10-digit phone number", "warn"); return; }
@@ -97,17 +111,11 @@ document.body.addEventListener("click", async (e) => {
       btn.disabled = false;
     }
     return;
-    }
+  }
   if(action === "logout"){ await logout(); renderRoot(); return; }
 
   // ---- Admin ----
-  if(action === "admin-login"){
-    const pass = document.getElementById("admin-pass").value;
-    if(pass === REMOTE_CONFIG.adminPassword){ adminLoggedIn = true; renderRoot(); toast("Welcome, admin", "success"); }
-    else{ toast("Incorrect password", "warn"); }
-    return;
-  }
-  if(action === "admin-logout"){ adminLoggedIn = false; renderRoot(); return; }
+  if(action === "admin-logout"){ window.location.hash = ""; return; }
 
   if(action === "save-admin-section"){
     const section = btn.dataset.section;
@@ -137,10 +145,16 @@ document.body.addEventListener("click", async (e) => {
   if(action === "admin-close-offer-form"){ closeScreen(); renderRoot(); return; }
 
   if(action === "admin-delete-offer"){
-    const offers = REMOTE_CONFIG.cpaOffers.filter(o => o.id !== btn.dataset.offer);
-    saveCpaOffers(offers);
-    toast("Offer deleted", "success");
-    renderRoot();
+    btn.disabled = true;
+    const ok = await adminDeleteOffer(btn.dataset.offer);
+    btn.disabled = false;
+    if(ok){
+      await loadOffersFromDB();
+      toast("Offer deleted", "success");
+      renderRoot();
+    }else{
+      toast("Could not delete offer", "warn");
+    }
     return;
   }
 
@@ -159,22 +173,21 @@ document.body.addEventListener("click", async (e) => {
       description: document.getElementById("of-desc").value.trim(),
       steps, importantInfo: info,
       slots: parseInt(document.getElementById("of-slots").value) || 0,
-      slotsUsed: 0,
     };
     if(!data.title){ toast("Title is required", "warn"); return; }
 
-    let offers = REMOTE_CONFIG.cpaOffers.slice();
-    if(existingId){
-      const old = offers.find(o => o.id === existingId);
-      data.slotsUsed = old ? (old.slotsUsed || 0) : 0;
-      offers = offers.map(o => o.id === existingId ? data : o);
+    btn.disabled = true;
+    const ok = existingId ? await adminUpdateOffer(data) : await adminInsertOffer(data);
+    btn.disabled = false;
+
+    if(ok){
+      await loadOffersFromDB();
+      toast("Offer saved", "success");
+      closeScreen();
+      renderRoot();
     }else{
-      offers.push(data);
+      toast("Could not save offer", "warn");
     }
-    saveCpaOffers(offers);
-    toast("Offer saved", "success");
-    closeScreen();
-    renderRoot();
     return;
   }
 
@@ -259,15 +272,8 @@ document.body.addEventListener("click", async (e) => {
     const proof = input ? input.value.trim() : "";
     if(!proof){ toast("Please enter your proof details", "warn"); return; }
     submitCpaTask(offerId, proof);
-    toast("Submitted for verification", "success");
+    toast("Submitted", "success");
     paintScreen();
-    return;
-  }
-  if(action === "demo-approve-cpa"){
-    if(demoApproveCpa(btn.dataset.sub)){
-      toast("Advertiser approved — reward added to CPA Wallet (locked)", "success");
-      paintScreen();
-    }
     return;
   }
 
@@ -293,5 +299,8 @@ document.body.addEventListener("click", async (e) => {
 
 (async () => {
   try { await restoreSession(); } catch(e){ console.error(e); }
+  try { await loadOffersFromDB(); } catch(e){ console.error(e); }
+  checkPendingCpaVerifications();
+  setInterval(checkPendingCpaVerifications, 60000);
   renderRoot();
 })();
