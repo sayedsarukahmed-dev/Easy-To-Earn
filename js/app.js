@@ -21,15 +21,21 @@ function renderRoot(){
       document.getElementById("app").innerHTML = viewAuthPhone();
       return;
     }
-    if(!adminCheckDone){
+
+        if(!adminCheckDone){
       document.getElementById("app").innerHTML = `<div class="auth-wrap"><div class="auth-sub">Checking access…</div></div>`;
       checkIsAdmin().then(isAdmin => {
         adminLoggedIn = isAdmin;
         adminCheckDone = true;
         renderRoot();
+      }).catch(err => {
+        console.error(err);
+        adminLoggedIn = false;
+        adminCheckDone = true;
+        renderRoot();
       });
       return;
-    }
+        }
     document.getElementById("app").innerHTML = adminLoggedIn ? viewAdminPanel() : viewAdminNotAuthorized();
     return;
   }
