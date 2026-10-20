@@ -1,10 +1,5 @@
 /* ============================================================
    STATE.JS
-   Per-user state (frontend simulation via localStorage). See
-   config.js for tunable settings (REMOTE_CONFIG). In production
-   every balance-affecting function here must be mirrored and
-   verified on a real backend — the client must never be the
-   source of truth for money.
    ============================================================ */
 
 const STORE_KEY = "earnly_state_v1";
@@ -63,11 +58,6 @@ function save(){
 }
 
 // ---- Auth (phone + password, via Supabase email system internally) ----
-// Supabase's free tier needs a working email system for OTP/magic-links,
-// but sending real email reliably needs a verified domain. To avoid that
-// requirement entirely, we store each user under a fake, never-sent email
-// built from their phone number, and use plain email+password auth under
-// the hood. The user only ever sees "phone number" and "password".
 function phoneToEmail(phone){
   return phone.replace(/[^0-9]/g, "") + "@phoneuser.easytoearn.app";
 }
@@ -97,9 +87,6 @@ async function logout(){
   save();
 }
 
-// Restores the session on page reload, if Supabase still has one
-// (supabase-js persists its own session in localStorage separately
-// from our app's STORE_KEY).
 async function restoreSession(){
   const { data } = await supabaseClient.auth.getSession();
   if(data.session && data.session.user){
@@ -114,7 +101,7 @@ async function restoreSession(){
   return false;
 }
 
-// ---- Ledger (locked-balance system, shared by both wallets) ----
+// ---- Ledger ----
 function addLedgerEntry(wallet, source, amount){
   const now = new Date();
   const lockDays = wallet === "cpa" ? REMOTE_CONFIG.cpaLockDays : REMOTE_CONFIG.adsLockDays;
@@ -187,8 +174,6 @@ function claimDailyBonus(){
   return true;
 }
 
-// Gate ads are a completely separate, zero-reward counter — pure profit,
-// never touches the wallet ledger, adsTotal, VIP progress, or daily-task counters.
 function creditGateAdWatch(){
   state.gateAdsToday += 1;
   save();
@@ -208,67 +193,64 @@ function offerHasSlots(offer){
 }
 
 function submitCpaTask(offerId, proof){
+  const offer = REMOTE_CONFIG.cpaOffers.find(o => o.id === offerId);
+  const now = new Date();
+  const isHard = offer && offer.category === "hardest";
   const sub = {
     id: "SUB" + Date.now(),
     offerId, proof,
-    status: "verifying",
-    submittedAt: new Date().toISOString(),
+    status: isHard ? "verifying" : "approved",
+    submittedAt: now.toISOString(),
+    verifyAt: isHard ? new Date(now.getTime() + 12*60*60*1000).toISOString() : null,
   };
   state.cpaSubmissions.push(sub);
+  if(!isHard && offer){
+    addLedgerEntry("cpa", offer.title, offer.reward);
+    offer.slotsUsed = (offer.slotsUsed || 0) + 1;
+  }
   save();
   return sub;
 }
 
-// DEMO ONLY — simulates the advertiser/admin approving a submission.
-// In production this must be a real backend action, never client-triggered.
-function demoApproveCpa(subId){
-  const sub = state.cpaSubmissions.find(s => s.id === subId);
-  if(!sub || sub.status !== "verifying") return false;
-  const offer = REMOTE_CONFIG.cpaOffers.find(o => o.id === sub.offerId);
-  if(!offer) return false;
-  sub.status = "approved";
-  addLedgerEntry("cpa", offer.title, offer.reward);
-  offer.slotsUsed = (offer.slotsUsed || 0) + 1;
-  saveCpaOffers(REMOTE_CONFIG.cpaOffers);
-  save();
-  return true;
-}
-
-// ---- Withdrawals ----
-function isWithinWithdrawWindow(d = new Date()){
-  const day = d.getDay();
-  const hour = d.getHours() + d.getMinutes()/60;
-  if(day === 6) return hour >= 13 && hour < 16;
-  if(day === 0) return hour >= 12 && hour < 15;
-  return false;
-}
-function nextWithdrawWindowLabel(){
-  return "Saturday 1:00 PM – 4:00 PM or Sunday 12:00 PM – 3:00 PM";
-}
-
-function requestWithdrawal(wallet, amount, accountNumber, name){
-  const w = {
-    id: "WD" + Date.now(),
-    wallet, amount, accountNumber, name,
-    status: "processing",
-    date: new Date().toISOString(),
-  };
-  state.withdrawals.unshift(w);
-
-  let remaining = amount;
+function checkPendingCpaVerifications(){
   const now = Date.now();
-  for(const e of state.ledger.filter(x => x.wallet === wallet && new Date(x.unlockAt).getTime() <= now)
-                              .sort((a,b) => new Date(a.creditedAt) - new Date(b.creditedAt))){
-    if(remaining <= 0) break;
-    const take = Math.min(e.amount, remaining);
-    e.amount -= take;
-    remaining -= take;
-  }
-  state.ledger = state.ledger.filter(e => e.amount > 0.0001);
-  save();
-  return w;
-     }
-// ---- Admin check & CRUD (writes blocked server-side unless you're in admins table) ----
+  let changed = false;
+  state.cpaSubmissions.forEach(sub => {
+    if(sub.status === "verifying" && sub.verifyAt && new Date(sub.verifyAt).getTime() <= now){
+      const offer = REMOTE_CONFIG.cpaOffers.find(o => o.id === sub.offerId);
+      if(offer){
+        sub.status = "approved";
+        addLedgerEntry("cpa", offer.title, offer.reward);
+        offer.slotsUsed = (offer.slotsUsed || 0) + 1;
+        changed = true;
+      }
+    }
+  });
+  if(changed) save();
+}
+
+async function loadOffersFromDB(){
+  try{
+    const { data, error } = await supabaseClient.from('cpa_offers').select('*').order('created_at', { ascending: true });
+    if(error || !data) return;
+    REMOTE_CONFIG.cpaOffers = data.map(row => ({
+      id: row.id,
+      category: row.category,
+      title: row.title,
+      advertiserPrice: row.advertiser_price,
+      reward: row.reward,
+      timeRequired: row.time_required,
+      link: row.link,
+      description: row.description,
+      steps: row.steps || [],
+      importantInfo: row.important_info || [],
+      slots: row.slots,
+      slotsUsed: row.slots_used,
+    }));
+  }catch(e){ console.error(e); }
+}
+
+// ---- Admin check & CRUD ----
 async function checkIsAdmin(){
   if(!state.auth.userId) return false;
   const { data, error } = await supabaseClient.from('admins').select('user_id').eq('user_id', state.auth.userId).maybeSingle();
@@ -316,4 +298,39 @@ async function adminDeleteOffer(id){
   const { error } = await supabaseClient.from('cpa_offers').delete().eq('id', id);
   if(error) console.error(error);
   return !error;
+}
+
+// ---- Withdrawals ----
+function isWithinWithdrawWindow(d = new Date()){
+  const day = d.getDay();
+  const hour = d.getHours() + d.getMinutes()/60;
+  if(day === 6) return hour >= 13 && hour < 16;
+  if(day === 0) return hour >= 12 && hour < 15;
+  return false;
+}
+function nextWithdrawWindowLabel(){
+  return "Saturday 1:00 PM – 4:00 PM or Sunday 12:00 PM – 3:00 PM";
+}
+
+function requestWithdrawal(wallet, amount, accountNumber, name){
+  const w = {
+    id: "WD" + Date.now(),
+    wallet, amount, accountNumber, name,
+    status: "processing",
+    date: new Date().toISOString(),
+  };
+  state.withdrawals.unshift(w);
+
+  let remaining = amount;
+  const now = Date.now();
+  for(const e of state.ledger.filter(x => x.wallet === wallet && new Date(x.unlockAt).getTime() <= now)
+                              .sort((a,b) => new Date(a.creditedAt) - new Date(b.creditedAt))){
+    if(remaining <= 0) break;
+    const take = Math.min(e.amount, remaining);
+    e.amount -= take;
+    remaining -= take;
+  }
+  state.ledger = state.ledger.filter(e => e.amount > 0.0001);
+  save();
+  return w;
 }
