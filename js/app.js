@@ -139,11 +139,17 @@ document.body.addEventListener("click", async (e) => {
       const linkEl = document.getElementById("cfg-directAdLink");
       if(linkEl) patch.directAdLink = linkEl.value.trim();
     }
-    saveConfig(patch);
-    toast("Settings saved", "success");
-    renderRoot();
+    btn.disabled = true;
+    const ok = await adminSaveConfigPatch(patch);
+    btn.disabled = false;
+    if(ok){
+      toast("Settings saved", "success");
+      renderRoot();
+    }else{
+      toast("Could not save — check your connection", "warn");
+    }
     return;
-  }
+  } 
 
   if(action === "admin-new-offer"){ openScreen(viewAdminOfferForm, null); return; }
   if(action === "admin-edit-offer"){ openScreen(viewAdminOfferForm, btn.dataset.offer); return; }
@@ -298,6 +304,7 @@ document.body.addEventListener("click", async (e) => {
 
 (async () => {
   try { await restoreSession(); } catch(e){ console.error(e); }
+  try { await loadConfigFromDB(); } catch(e){ console.error(e); }
   try { await loadOffersFromDB(); } catch(e){ console.error(e); }
   checkPendingCpaVerifications();
   setInterval(checkPendingCpaVerifications, 60000);
