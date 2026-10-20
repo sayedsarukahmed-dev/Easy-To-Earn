@@ -344,3 +344,21 @@ function requestWithdrawal(wallet, amount, accountNumber, name){
   save();
   return w;
                    }
+// ---- App-wide config, synced via Supabase (app_config table) ----
+async function loadConfigFromDB(){
+  try{
+    const { data, error } = await supabaseClient.from('app_config').select('config').eq('id', 1).maybeSingle();
+    if(error || !data || !data.config) return;
+    Object.assign(REMOTE_CONFIG, DEFAULT_CONFIG, data.config);
+  }catch(e){ console.error(e); }
+}
+
+async function adminSaveConfigPatch(patch){
+  Object.assign(REMOTE_CONFIG, patch);
+  const { cpaOffers, ...toPersist } = REMOTE_CONFIG;
+  const { error } = await supabaseClient.from('app_config')
+    .update({ config: toPersist, updated_at: new Date().toISOString() })
+    .eq('id', 1);
+  if(error){ console.error(error); return false; }
+  return true;
+}
