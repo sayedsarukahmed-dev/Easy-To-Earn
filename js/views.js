@@ -560,7 +560,7 @@ function viewAdminPanel(){
         <div class="action-card">
           <div class="action-body">
             <div class="action-title">${o.title}</div>
-            <div class="action-meta">${CATEGORY_LABEL[o.category]} · ₹${o.reward} · ${(o.slotsUsed||0)}/${o.slots} used</div>
+            <div class="action-meta">${CATEGORY_LABEL[o.category]} · ₹${o.reward} · ${(o.slotsUsed||0)}/${o.slots} total · ${offerCompletionsToday(o.id)}/${o.dailyLimit || "∞"} today</div>
           </div>
           <button class="btn btn-ghost" style="width:auto; padding:8px 12px; margin-right:6px;" data-action="admin-edit-offer" data-offer="${o.id}">Edit</button>
           <button class="btn btn-danger-outline" style="width:auto; padding:8px 12px;" data-action="admin-delete-offer" data-offer="${o.id}">Delete</button>
@@ -599,7 +599,8 @@ function viewAdminOfferForm(offerId){
       <label>Important info (one per line)</label>
       <textarea id="of-info" rows="4" style="width:100%; padding:13px 14px; border-radius:10px; background:var(--bg-1); border:1px solid var(--line); color:var(--text-0); font-size:13.5px; font-family:inherit;">${o ? o.importantInfo.join("\n") : ""}</textarea>
     </div>
-    <div class="field"><label>Slots (max completions)</label><input type="number" id="of-slots" value="${o ? o.slots : 100}"></div>
+    <div class="field"><label>Slots (max completions, total)</label><input type="number" id="of-slots" value="${o ? o.slots : 100}"></div>
+    <div class="field"><label>Max completions per day</label><input type="number" id="of-daily-limit" value="${o ? (o.dailyLimit || 10) : 10}"></div>
 
     <button class="btn btn-primary" data-action="admin-save-offer" data-offer="${o ? o.id : ""}">Save Offer</button>
   `;
