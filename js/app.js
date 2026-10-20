@@ -22,7 +22,7 @@ function renderRoot(){
       return;
     }
 
-        if(!adminCheckDone){
+         if(!adminCheckDone){
       document.getElementById("app").innerHTML = `<div class="auth-wrap"><div class="auth-sub">Checking access…</div></div>`;
       checkIsAdmin().then(isAdmin => {
         adminLoggedIn = isAdmin;
@@ -35,7 +35,7 @@ function renderRoot(){
         renderRoot();
       });
       return;
-        }
+    }   
     document.getElementById("app").innerHTML = adminLoggedIn ? viewAdminPanel() : viewAdminNotAuthorized();
     return;
   }
