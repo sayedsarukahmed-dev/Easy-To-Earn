@@ -188,8 +188,15 @@ function isAiToolsUnlockedToday(){
 }
 
 // ---- CPA offers / submissions ----
+function offerCompletionsToday(offerId){
+  const today = todayKey();
+  return state.cpaSubmissions.filter(s => s.offerId === offerId && s.submittedAt.slice(0,10) === today).length;
+}
+
 function offerHasSlots(offer){
-  return (offer.slotsUsed || 0) < (offer.slots || Infinity);
+  const underTotal = (offer.slotsUsed || 0) < (offer.slots || Infinity);
+  const underDaily = offerCompletionsToday(offer.id) < (offer.dailyLimit || Infinity);
+  return underTotal && underDaily;
 }
 
 function submitCpaTask(offerId, proof){
@@ -246,6 +253,7 @@ async function loadOffersFromDB(){
       importantInfo: row.important_info || [],
       slots: row.slots,
       slotsUsed: row.slots_used,
+      dailyLimit: row.daily_limit,
     }));
   }catch(e){ console.error(e); }
 }
@@ -271,6 +279,7 @@ async function adminInsertOffer(offer){
     steps: offer.steps,
     important_info: offer.importantInfo,
     slots: offer.slots,
+    daily_limit: offer.dailyLimit,
     slots_used: 0,
   });
   if(error) console.error(error);
@@ -289,6 +298,7 @@ async function adminUpdateOffer(offer){
     steps: offer.steps,
     important_info: offer.importantInfo,
     slots: offer.slots,
+    daily_limit: offer.dailyLimit,
   }).eq('id', offer.id);
   if(error) console.error(error);
   return !error;
@@ -333,4 +343,4 @@ function requestWithdrawal(wallet, amount, accountNumber, name){
   state.ledger = state.ledger.filter(e => e.amount > 0.0001);
   save();
   return w;
-}
+                   }
