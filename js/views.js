@@ -441,10 +441,18 @@ function viewCpaDetail(offerId){
     <div class="section-title">Before you start</div>
     <div class="notice warn" style="text-align:left;"><ul>${o.importantInfo.map(i => `<li>${i}</li>`).join("")}</ul></div>
 
-    ${!existing ? `
+        ${!existing ? `
       <div class="section-title">Submit for verification</div>
+      <div class="notice" id="cpa-link-notice" style="text-align:left; margin-bottom:14px;">
+        First open the offer link below, complete the steps there, then come back and submit.
+      </div>
+      <button class="btn btn-ghost" id="cpa-open-link-btn" data-action="cpa-open-link" data-offer="${o.id}" data-link="${o.link}" style="margin-bottom:14px;">Open Offer Link</button>
       <div class="field"><label>Registered number / proof link</label><input type="text" id="cpa-proof-${o.id}" placeholder="e.g. your registered mobile number"></div>
-      <button class="btn btn-primary" data-action="submit-cpa" data-offer="${o.id}">Submit</button>
+      <label style="display:flex; align-items:flex-start; gap:10px; margin-bottom:16px; font-size:13px; color:var(--text-1); cursor:pointer;">
+        <input type="checkbox" id="cpa-confirm-${o.id}" style="margin-top:3px;">
+        <span>I confirm I have completed every step of this task.</span>
+      </label>
+      <button class="btn btn-primary" id="cpa-submit-btn" data-action="submit-cpa" data-offer="${o.id}" disabled>Open the offer link first</button>
     ` : `
       <div class="section-title">Status</div>
       ${cpaStatusSteps(existing)}
