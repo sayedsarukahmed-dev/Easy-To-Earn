@@ -1,3 +1,12 @@
+function parseTimeToSeconds(timeStr){
+  if(!timeStr) return 30;
+  const match = timeStr.match(/(\d+)/);
+  const num = match ? parseInt(match[1]) : 1;
+  if(timeStr.toLowerCase().includes("minute")) return num * 60;
+  if(timeStr.toLowerCase().includes("second")) return num;
+  return num * 60;
+}
+
 const routes = { home: viewHome, earn: viewEarn, tasks: viewTasks, refer: viewRefer, wallet: viewWallet };
 let currentRoute = "home";
 let activeWalletTab = "ads";
@@ -149,7 +158,7 @@ document.body.addEventListener("click", async (e) => {
       toast("Could not save — check your connection", "warn");
     }
     return;
-  } 
+  }
 
   if(action === "admin-new-offer"){ openScreen(viewAdminOfferForm, null); return; }
   if(action === "admin-edit-offer"){ openScreen(viewAdminOfferForm, btn.dataset.offer); return; }
@@ -201,7 +210,9 @@ document.body.addEventListener("click", async (e) => {
       toast("Could not save offer", "warn");
     }
     return;
-  }  if(action === "switch-wallet-tab"){ activeWalletTab = btn.dataset.wallet; render(); return; }
+  }
+
+  if(action === "switch-wallet-tab"){ activeWalletTab = btn.dataset.wallet; render(); return; }
 
   // ---- Ads ----
   if(action === "watch-ad"){
@@ -271,11 +282,44 @@ document.body.addEventListener("click", async (e) => {
   if(action === "close-screen"){ closeScreen(); render(); return; }
   if(action === "open-history"){ openScreen(viewHistory); return; }
 
+  if(action === "cpa-open-link"){
+    const link = btn.dataset.link;
+    const offerId = btn.dataset.offer;
+    const offer = REMOTE_CONFIG.cpaOffers.find(o => o.id === offerId);
+    window.open(link, "_blank", "noopener");
+
+    btn.disabled = true;
+    btn.textContent = "Offer link opened";
+
+    const submitBtn = document.getElementById("cpa-submit-btn");
+    const notice = document.getElementById("cpa-link-notice");
+    if(!submitBtn) return;
+
+    const waitSeconds = offer ? parseTimeToSeconds(offer.timeRequired) : 30;
+    let remaining = waitSeconds;
+    submitBtn.textContent = `Please wait ${remaining}s…`;
+
+    const tick = setInterval(() => {
+      remaining -= 1;
+      if(remaining <= 0){
+        clearInterval(tick);
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Submit";
+        if(notice) notice.style.display = "none";
+      }else{
+        submitBtn.textContent = `Please wait ${remaining}s…`;
+      }
+    }, 1000);
+    return;
+  }
+
   if(action === "submit-cpa"){
     const offerId = btn.dataset.offer;
     const input = document.getElementById(`cpa-proof-${offerId}`);
+    const confirmBox = document.getElementById(`cpa-confirm-${offerId}`);
     const proof = input ? input.value.trim() : "";
     if(!proof){ toast("Please enter your proof details", "warn"); return; }
+    if(!confirmBox || !confirmBox.checked){ toast("Please confirm you completed the task", "warn"); return; }
     submitCpaTask(offerId, proof);
     toast("Submitted", "success");
     paintScreen();
