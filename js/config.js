@@ -1,7 +1,7 @@
 /* ============================================================
    SUPABASE CONNECTION
    ============================================================ */
-const SUPABASE_URL = "https:/jvilriwbpyqvzflwljiq.supabase.co";
+const SUPABASE_URL = "https://jvilriwbpyqvzflwljiq.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_vjMF6SEYHtYmI-07DHCydQ_yEWVcijx";
 
 /* ============================================================
